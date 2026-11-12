@@ -42,13 +42,13 @@ A task is done when all of these are true:
 
 ## 4. AI tools and outside material
 
-The course allows AI tools to understand and to debug, but **every line must
-be understood by the person who commits it and by the group**.
+The Guide allows AI tools and online material to understand and to debug,
+but **every line we submit must be understood**.
 
 - If an AI tool or a website helped write code, you must be able to explain
   it line by line without the tool. If you can't, don't commit it.
-- Code taken from elsewhere is cited in the report. Keep a note in the PR
-  description when it happens so we don't forget.
+- If outside material (a website, a book, an AI answer) shaped the code,
+  note it in the PR description so we can mention it in the report.
 - `CLAUDE.md` is a personal file for Claude Code and is in `.gitignore`.
   Each of us keeps our own copy. Ask the other person if you want theirs.
 

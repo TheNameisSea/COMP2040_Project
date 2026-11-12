@@ -34,4 +34,4 @@ going to work in. The headers in `include/` explain each interface.
 2. **Both of us must be able to explain every line.** At the demo, any of
    us can be asked about any part. Reviews are how we learn the other half.
 3. **Commit your own work from your own account, often.** The commit history
-   is part of the mark (±20% per person).
+   is part of the evidence of who did what.

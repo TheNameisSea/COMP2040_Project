@@ -186,18 +186,18 @@ of making a file that ossim rejects.
 - `--locality 1.0` must give far fewer faults than `--locality 0` with the
   same frames. Put that comparison in report 2.
 
-Agree on the file format with B, because their experiment runner calls it.
+Keep the options stable: B's experiment runner (final) will call it.
 
 ### What to review in B's work
 - **Disk:** redo SSTF and C-LOOK on the textbook queue (236, 322), and check
   that SCAN's trip to the edge is in `via[]` and counted.
-- **Runner:** run it yourself and check one row of its CSV against a manual
-  `./ossim` run.
 
 ---
 
 ## Final
 
+- **Review B's runner:** run it yourself and check one row of its CSV
+  against a manual `./ossim` run.
 - **Experiment 1:** waiting and response time of the six schedulers as the
   amount of I/O grows. Use your generator (`--io` from 0 to 0.8), B's runner,
   and several seeds per point. Plot avg_waiting and avg_response vs I/O.

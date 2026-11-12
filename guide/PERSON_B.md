@@ -1,7 +1,7 @@
 # Person B: task guide
 
 You own: **MLFQ and deadlock detection** (checkpoint 1), **SSTF, SCAN,
-C-LOOK and the experiment runner** (checkpoint 2), and **experiment 2**
+C-LOOK** (checkpoint 2), and **the experiment runner and experiment 2**
 (final). You review all of Person A's work: SJF, SRTF, PRIO, LRU, Clock and
 the generator.
 
@@ -144,7 +144,18 @@ head → via[0] → via[1] → cylinder.
 - Also make it work for `--direction down` (mirror image) and compute one
   case by hand.
 
-### 2.7 Experiment runner: branch `exp/runner`
+### What to review in A's work
+- **LRU:** check it doesn't update `last_used` again in `on_hit` (the
+  kernel already does).
+- **Clock:** redo A's hand-computed Clock case, including the rule that a
+  newly installed page has `referenced = true`.
+- **Generator:** same seed → same file; files near the limits still load.
+
+---
+
+## Final
+
+### 3.1 Experiment runner: branch `exp/runner`
 
 Write `tools/run_exp.py` (Python 3; matplotlib only for plotting).
 
@@ -161,17 +172,6 @@ Write `tools/run_exp.py` (Python 3; matplotlib only for plotting).
    workloads. Agree on its options with A.
 
 Check: one row of the CSV must match a manual `./ossim` run.
-
-### What to review in A's work
-- **LRU:** check it doesn't update `last_used` again in `on_hit` (the
-  kernel already does).
-- **Clock:** redo A's hand-computed Clock case, including the rule that a
-  newly installed page has `referenced = true`.
-- **Generator:** same seed → same file; files near the limits still load.
-
----
-
-## Final
 
 - **Experiment 2:** page faults and CPU utilization as the number of frames
   goes down, for FIFO, LRU and Clock. Where does thrashing start? Find a

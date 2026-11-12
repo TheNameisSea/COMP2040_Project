@@ -19,7 +19,7 @@ Why: the reason, in one or two sentences.
 
 ## D-1: Team of two, split by area
 Date: 2026-11-12 · Decided by: both · Status: accepted
-Context: The handout assumes groups of 3–4; we are 2.
+Context: The group has 2 members (confirmed).
 Decision: A owns SJF/SRTF/PRIO, LRU/Clock and the generator; B owns MLFQ,
 deadlock detection, the disk schedulers and the experiment runner. Each
 reviews the other. Details in [guide/TASKS.md](guide/TASKS.md).
@@ -51,9 +51,8 @@ Why: It is personal tool configuration, not part of the submission.
 - **Q-3: Tie-breaking in SJF/SRTF/PRIO.** Equal keys: FIFO order of entering
   the ready queue, or lower pid? Must match the hand checks. Owner: A.
 - **Q-4: Generator language.** Python is the obvious choice (no build step).
-- **Q-5: Theme.** Choose by Week 12, can change until Week 13.
-- **Q-6: Checkpoint 1 week.** Handouts say Week 7 and Week 8. Confirm on Canvas.
-- **Q-7: Group size.** Confirm with the instructor that a group of 2 is OK.
+- **Q-5: Theme.** Choose by Week 12, can change until Week 13. Needs a
+  hand-computed check, one experiment, and a part of the presentation.
 - **Q-8: PRIO details.** Fresh quantum after being preempted by a higher
   priority? Equal-priority arrival waits for the quantum to end? Owner: A.
 - **Q-9: MLFQ details.** Boost at t = 20, 40, …; demote even if nobody else
