@@ -2,3 +2,5 @@ build/
 ossim
 *.o
 *.csv
+.DS_Store
+CLAUDE.md
