@@ -1,7 +1,8 @@
 /*
  * sched.c: CPU schedulers.
  *
- * FCFS and RR are given. TODO checkpoint 1: sjf, srtf, prio, mlfq.
+ * FCFS and RR are given. SJF, SRTF and PRIO are implemented below.
+ * TODO checkpoint 1: mlfq.
  * Each one is a scheduler_t with the same hooks as FCFS and RR. There are
  * notes above each stub. Functions you will probably need:
  *   proc_burst_remaining(p)   ticks left in p's current cpu burst
@@ -56,27 +57,71 @@ static scheduler_t sched_rr = {
     rr_on_dispatch, rr_on_tick, rr_ready_count
 };
 
-/* SJF
- * TODO: shortest job first, non-preemptive.
- *   pick(): q_pop_min(&q, key) with key = proc_burst_remaining
- *   should_preempt(): always false
- * For your report: ossim knows the exact length of the next burst, a real
- * OS does not. How would you add exponential averaging (Sec. 5.3.2)? */
-static void sjf_init(void) { die("scheduler 'sjf' is not implemented yet (src/sched.c)"); }
-static scheduler_t sched_sjf = { "sjf", sjf_init, NULL, NULL, NULL, NULL, NULL, NULL };
+/* SJF: use the current burst, not all remaining CPU work. q_pop_min()
+ * preserves ready-queue order on ties (DECISION.md D-7). */
+static queue_t sjf_q;
 
-/* SRTF
- * TODO: SJF with preemption. should_preempt(r) is true when a READY process
- * has less left of its burst than r, that is q_min_key(&q, key) < key(r). */
-static void srtf_init(void) { die("scheduler 'srtf' is not implemented yet (src/sched.c)"); }
-static scheduler_t sched_srtf = { "srtf", srtf_init, NULL, NULL, NULL, NULL, NULL, NULL };
+static int    burst_key(const pcb_t *p)    { return proc_burst_remaining(p); }
+static void   sjf_init(void)               { q_init(&sjf_q); }
+static void   sjf_enqueue(pcb_t *p)        { q_push(&sjf_q, p); }
+static bool   sjf_should_preempt(pcb_t *r) { (void)r; return false; }
+static pcb_t *sjf_pick(void)               { return q_pop_min(&sjf_q, burst_key); }
+static void   sjf_on_dispatch(pcb_t *p)    { (void)p; }
+static void   sjf_on_tick(pcb_t *r)        { (void)r; }
+static int    sjf_ready_count(void)        { return q_size(&sjf_q); }
 
-/* PRIO
- * TODO: priority with preemption (smaller number = higher priority), and RR
- * between processes of the same priority. Low priorities can starve; aging
- * is a stretch goal. */
-static void prio_init(void) { die("scheduler 'prio' is not implemented yet (src/sched.c)"); }
-static scheduler_t sched_prio = { "prio", prio_init, NULL, NULL, NULL, NULL, NULL, NULL };
+static scheduler_t sched_sjf = {
+    "sjf", sjf_init, sjf_enqueue, sjf_should_preempt, sjf_pick,
+    sjf_on_dispatch, sjf_on_tick, sjf_ready_count
+};
+
+/* SRTF: equal remaining bursts do not preempt the running process. */
+static queue_t srtf_q;
+
+static void   srtf_init(void)            { q_init(&srtf_q); }
+static void   srtf_enqueue(pcb_t *p)     { q_push(&srtf_q, p); }
+static pcb_t *srtf_pick(void)            { return q_pop_min(&srtf_q, burst_key); }
+static void   srtf_on_dispatch(pcb_t *p) { (void)p; }
+static void   srtf_on_tick(pcb_t *r)     { (void)r; }
+static int    srtf_ready_count(void)     { return q_size(&srtf_q); }
+
+static bool srtf_should_preempt(pcb_t *r)
+{
+    return q_min_key(&srtf_q, burst_key) < burst_key(r);
+}
+
+static scheduler_t sched_srtf = {
+    "srtf", srtf_init, srtf_enqueue, srtf_should_preempt, srtf_pick,
+    srtf_on_dispatch, srtf_on_tick, srtf_ready_count
+};
+
+/* PRIO: a smaller number is a higher priority. A dispatch starts a fresh
+ * quantum, including after higher-priority preemption (DECISION.md D-8). */
+static queue_t prio_q;
+
+static int    prio_key(const pcb_t *p)   { return p->priority; }
+static void   prio_init(void)            { q_init(&prio_q); }
+static void   prio_enqueue(pcb_t *p)     { q_push(&prio_q, p); }
+static pcb_t *prio_pick(void)            { return q_pop_min(&prio_q, prio_key); }
+static void   prio_on_dispatch(pcb_t *p) { p->quantum_used = 0; }
+static void   prio_on_tick(pcb_t *r)     { r->quantum_used++; }
+static int    prio_ready_count(void)     { return q_size(&prio_q); }
+
+static bool prio_should_preempt(pcb_t *r)
+{
+    int best = q_min_key(&prio_q, prio_key);
+    if (best < r->priority) return true;
+    if (r->quantum_used < cfg.quantum) return false;
+
+    /* Lower-priority waiters must not take the CPU on quantum expiry. */
+    r->quantum_used = 0;
+    return !q_empty(&prio_q) && best == r->priority;
+}
+
+static scheduler_t sched_prio = {
+    "prio", prio_init, prio_enqueue, prio_should_preempt, prio_pick,
+    prio_on_dispatch, prio_on_tick, prio_ready_count
+};
 
 /* MLFQ
  * TODO: multilevel feedback queue with 3 levels, RR with quantum q, 2q and

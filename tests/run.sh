@@ -10,10 +10,11 @@ BIN=./ossim
 fail=0; pass=0; skip=0
 
 check() {   # check <description> <command> <expected-word>
-    out=$($2 2>&1) || true
+    out=$($2 2>&1)
+    status=$?
     if echo "$out" | grep -q "not implemented yet"; then
         echo "SKIP  $1"; skip=$((skip + 1))
-    elif echo "$out" | grep -qw -- "$3"; then
+    elif [ "$status" -eq 0 ] && echo "$out" | grep -Fqw -- "$3"; then
         echo "PASS  $1"; pass=$((pass + 1))
     else
         echo "FAIL  $1"; echo "      expected: $3"; echo "$out" | sed 's/^/      /'; fail=1
@@ -21,10 +22,13 @@ check() {   # check <description> <command> <expected-word>
 }
 
 check_no() {   # check_no <description> <command> <word that must NOT appear>
-    out=$($2 2>&1) || true
+    out=$($2 2>&1)
+    status=$?
     if echo "$out" | grep -q "not implemented yet"; then
         echo "SKIP  $1"; skip=$((skip + 1))
-    elif echo "$out" | grep -qw -- "$3"; then
+    elif [ "$status" -ne 0 ]; then
+        echo "FAIL  $1 (exit $status)"; echo "$out" | sed 's/^/      /'; fail=1
+    elif echo "$out" | grep -Fqw -- "$3"; then
         echo "FAIL  $1"; echo "      must not contain: $3"; echo "$out" | sed 's/^/      /'; fail=1
     else
         echo "PASS  $1"; pass=$((pass + 1))
@@ -74,13 +78,89 @@ check "Deadlock detection (2 instances): found at t=6" \
       "$BIN workloads/deadlock_multi.txt --sched rr --quantum 1 --deadlock-every 2 --max-ticks 20 --no-paging" "DEADLOCK t=6 pids: 1 2"
 check_no "Deadlock detection (2 instances): blocked but not deadlocked" \
       "$BIN workloads/no_deadlock_multi.txt --sched fcfs --deadlock-every 1 --no-paging" "DEADLOCK"
+check "Deadlock detection (2 instances): non-deadlocked processes finish" \
+      "$BIN workloads/no_deadlock_multi.txt --sched fcfs --deadlock-every 1 --no-paging" "finished=2/2"
 
 for s in sjf srtf prio mlfq; do
     check "Producer/consumer completes under $s" \
           "$BIN workloads/producer_consumer.txt --sched $s --quantum 2 --no-paging" "finished=2/2"
 done
-# TODO: add hand-computed avg_waiting / avg_response for every scheduler on
-# workloads/arrivals.txt (and show the Gantt chart in your design note).
+# Person A: independent calculations and Gantt charts in docs/checks/.
+check "SJF on arrivals: avg waiting 10.00 (hand-computed)" \
+      "$BIN workloads/arrivals.txt --sched sjf --no-paging" "avg_waiting=10.00"
+check "SJF on arrivals: avg response 9.00 (hand-computed)" \
+      "$BIN workloads/arrivals.txt --sched sjf --no-paging" "avg_response=9.00"
+check "SJF on arrivals: avg turnaround 17.83 (hand-computed)" \
+      "$BIN workloads/arrivals.txt --sched sjf --no-paging" "avg_turnaround=17.83"
+check "SJF on arrivals: 8 context switches (hand-computed)" \
+      "$BIN workloads/arrivals.txt --sched sjf --no-paging" "context_switches=8"
+
+check "SRTF on arrivals: avg waiting 9.83 (hand-computed)" \
+      "$BIN workloads/arrivals.txt --sched srtf --no-paging" "avg_waiting=9.83"
+check "SRTF on arrivals: avg response 9.00 (hand-computed)" \
+      "$BIN workloads/arrivals.txt --sched srtf --no-paging" "avg_response=9.00"
+check "SRTF on arrivals: avg turnaround 17.67 (hand-computed)" \
+      "$BIN workloads/arrivals.txt --sched srtf --no-paging" "avg_turnaround=17.67"
+check "SRTF on arrivals: 9 context switches (hand-computed)" \
+      "$BIN workloads/arrivals.txt --sched srtf --no-paging" "context_switches=9"
+
+check "PRIO q=2 on arrivals: avg waiting 12.83 (hand-computed)" \
+      "$BIN workloads/arrivals.txt --sched prio --quantum 2 --no-paging" "avg_waiting=12.83"
+check "PRIO q=2 on arrivals: avg response 8.33 (hand-computed)" \
+      "$BIN workloads/arrivals.txt --sched prio --quantum 2 --no-paging" "avg_response=8.33"
+check "PRIO q=2 on arrivals: avg turnaround 20.67 (hand-computed)" \
+      "$BIN workloads/arrivals.txt --sched prio --quantum 2 --no-paging" "avg_turnaround=20.67"
+check "PRIO q=2 on arrivals: 12 context switches (hand-computed)" \
+      "$BIN workloads/arrivals.txt --sched prio --quantum 2 --no-paging" "context_switches=12"
+
+check "SJF textbook bursts 24,3,3: avg waiting 3.00" \
+      "$BIN workloads/basic.txt --sched sjf --no-paging" "avg_waiting=3.00"
+
+# These cases distinguish FIFO ties from pid order, and check that cpu
+# ops back to back retain the CPU (and PRIO's quantum) without a dispatch.
+check "SJF edge case: avg waiting 3.50" \
+      "$BIN workloads/sched_edges.txt --sched sjf --no-paging" "avg_waiting=3.50"
+check "SJF edge case: avg response 3.75" \
+      "$BIN workloads/sched_edges.txt --sched sjf --no-paging" "avg_response=3.75"
+check "SJF edge case: avg turnaround 6.25" \
+      "$BIN workloads/sched_edges.txt --sched sjf --no-paging" "avg_turnaround=6.25"
+check "SJF edge case: 4 context switches" \
+      "$BIN workloads/sched_edges.txt --sched sjf --no-paging" "context_switches=4"
+
+check "SRTF edge case: avg waiting 2.75" \
+      "$BIN workloads/sched_edges.txt --sched srtf --no-paging" "avg_waiting=2.75"
+check "SRTF edge case: avg response 1.50" \
+      "$BIN workloads/sched_edges.txt --sched srtf --no-paging" "avg_response=1.50"
+check "SRTF edge case: avg turnaround 5.50" \
+      "$BIN workloads/sched_edges.txt --sched srtf --no-paging" "avg_turnaround=5.50"
+check "SRTF edge case: 5 context switches" \
+      "$BIN workloads/sched_edges.txt --sched srtf --no-paging" "context_switches=5"
+
+check "PRIO q=2 edge case: avg waiting 3.50" \
+      "$BIN workloads/sched_edges.txt --sched prio --quantum 2 --no-paging" "avg_waiting=3.50"
+check "PRIO q=2 edge case: avg response 2.25" \
+      "$BIN workloads/sched_edges.txt --sched prio --quantum 2 --no-paging" "avg_response=2.25"
+check "PRIO q=2 edge case: avg turnaround 6.25" \
+      "$BIN workloads/sched_edges.txt --sched prio --quantum 2 --no-paging" "avg_turnaround=6.25"
+check "PRIO q=2 edge case: 5 context switches" \
+      "$BIN workloads/sched_edges.txt --sched prio --quantum 2 --no-paging" "context_switches=5"
+
+check "PRIO q=3: equal arrivals wait, fresh quantum after preemption; waiting 6.00" \
+      "$BIN workloads/prio_check.txt --sched prio --quantum 3 --no-paging" "avg_waiting=6.00"
+check "PRIO q=3: avg response 3.75" \
+      "$BIN workloads/prio_check.txt --sched prio --quantum 3 --no-paging" "avg_response=3.75"
+check "PRIO q=3: avg turnaround 9.50" \
+      "$BIN workloads/prio_check.txt --sched prio --quantum 3 --no-paging" "avg_turnaround=9.50"
+check "PRIO q=3: 7 context switches" \
+      "$BIN workloads/prio_check.txt --sched prio --quantum 3 --no-paging" "context_switches=7"
+
+for s in sjf srtf prio; do
+    check "Mixed workload finishes under $s with paging" \
+          "$BIN workloads/mixed.txt --sched $s --quantum 3 --frames 6" "finished=4/4"
+    check "Mixed workload finishes under $s with one frame" \
+          "$BIN workloads/mixed.txt --sched $s --quantum 3 --frames 1" "finished=4/4"
+done
+# Person B: add hand-computed arrivals checks for MLFQ with its implementation.
 
 # --- checkpoint 2 ----------------------------------------------------------
 check "Paging: LRU, 3 frames -> 12 faults (textbook Sec. 10.4.4)" \

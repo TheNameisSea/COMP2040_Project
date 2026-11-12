@@ -1,0 +1,21 @@
+# FIFO ties, same-tick arrival/I/O completion, and consecutive cpu ops.
+# Use --no-paging. Hand calculations are in docs/checks/{sjf,srtf,prio}.md.
+# The lowest pid arrives last, so breaking ties by pid gives a wrong trace.
+
+process late arrive=2 pages=1
+    cpu 2
+end
+
+process consecutive arrive=0 pages=1
+    cpu 1
+    cpu 3
+end
+
+process earlier arrive=1 pages=1
+    cpu 2
+end
+
+process waking arrive=0 pages=1
+    io 1
+    cpu 2
+end
