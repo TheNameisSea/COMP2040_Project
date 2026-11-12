@@ -2,8 +2,8 @@
 
 | | Name | GitHub |
 |---|---|---|
-| **A** | | TheNameisSea |
-| **B** | | |
+| **A** | | garan1610 |
+| **B** | | TheNameisSea |
 
 Split accepted (DECISION.md D-1). Detailed guides:
 [PERSON_A.md](PERSON_A.md) and [PERSON_B.md](PERSON_B.md).
