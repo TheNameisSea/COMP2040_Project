@@ -126,7 +126,60 @@ void res_release(pcb_t *p, resource_t *r, int n)
  * only report it and let --max-ticks end the run. If you only report, print
  * each deadlock once. workloads/deadlock.txt must be detected.
  */
+/*
+ * The detection algorithm of Sec. 8.6.2, for several instances per resource:
+ *   Work = Available. Finish[i] = true if P_i holds nothing.
+ *   Find an i with !Finish[i] and Request_i <= Work. P_i can get what it
+ *   wants, finish and give back what it holds: Work += Allocation_i,
+ *   Finish[i] = true. Repeat until there is no such i.
+ *   Every P_i with !Finish[i] is deadlocked.
+ * Only resources are looked at. A process blocked on a semaphore has no
+ * Request, so the algorithm sees it as able to finish.
+ */
+static bool reported[MAX_PROCS + 1];   /* the deadlocked set printed last, by pid */
+
 void deadlock_check(void)
 {
-    die("deadlock_check() is not implemented yet (src/sync.c)");
+    int  work[MAX_RES];
+    bool finish[MAX_PROCS + 1];
+
+    for (int r = 0; r < nres; r++) work[r] = resources[r].available;
+    for (int i = 0; i < nprocs; i++) {
+        int  pid = procs[i].pid;
+        bool holds = false;
+        for (int r = 0; r < nres; r++)
+            if (resources[r].allocated[pid] > 0) holds = true;
+        finish[pid] = procs[i].state == P_TERMINATED || !holds;
+    }
+
+    bool progress = true;
+    while (progress) {
+        progress = false;
+        for (int i = 0; i < nprocs; i++) {
+            int pid = procs[i].pid;
+            if (finish[pid]) continue;
+            bool fits = true;
+            for (int r = 0; r < nres; r++)
+                if (resources[r].requested[pid] > work[r]) fits = false;
+            if (!fits) continue;
+            for (int r = 0; r < nres; r++) work[r] += resources[r].allocated[pid];
+            finish[pid] = true;
+            progress = true;
+        }
+    }
+
+    /* Print a deadlock once: only when the set differs from the last one.
+     * procs[] is in pid order, so the pids come out from small to large. */
+    bool any = false, changed = false;
+    for (int i = 0; i < nprocs; i++) {
+        int pid = procs[i].pid;
+        if (!finish[pid]) any = true;
+        if (!finish[pid] != reported[pid]) changed = true;
+        reported[pid] = !finish[pid];
+    }
+    if (!any || !changed) return;
+    printf("DEADLOCK t=%ld pids:", now);
+    for (int i = 0; i < nprocs; i++)
+        if (!finish[procs[i].pid]) printf(" %d", procs[i].pid);
+    printf("\n");
 }

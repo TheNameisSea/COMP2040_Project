@@ -39,15 +39,22 @@ Date: 2026-11-12 · Decided by: both · Status: accepted
 Decision: `CLAUDE.md` is in `.gitignore`; each member keeps their own.
 Why: It is personal tool configuration, not part of the submission.
 
+## D-4: Deadlock detection with the Sec. 8.6.2 algorithm, report only
+Date: 2026-11-12 · Decided by: B · Status: accepted
+Context: Q-1 (method) and Q-2 (recovery).
+Options: wait-for graph (one instance per resource) or the detection
+algorithm of Sec. 8.6.2 (several instances); report only or kill a victim.
+Decision: the Sec. 8.6.2 algorithm. Only report, no recovery. A deadlock is
+printed once, and again only if the deadlocked set changes. A terminated
+process counts as finished.
+Why: It handles resources with several instances (see
+workloads/deadlock_multi.txt, where a wait-for graph would be wrong at t=4),
+and it is what themes 7 and 8 build on. Recovery is optional in the Guide.
+
 ---
 
 ## Open questions
 
-- **Q-1: Deadlock detection method.** Wait-for graph (simpler, one instance
-  per resource; enough for `deadlock.txt`) or the multi-instance algorithm of
-  Sec. 8.6.2 (more general; needed if we pick theme 7 or 8). Owner: B.
-- **Q-2: Recovery after detection.** Only report (print once per deadlock),
-  or kill a victim with `kernel_abort()`? Optional for checkpoint 1.
 - **Q-3: Tie-breaking in SJF/SRTF/PRIO.** Equal keys: FIFO order of entering
   the ready queue, or lower pid? Must match the hand checks. Owner: A.
 - **Q-4: Generator language.** Python is the obvious choice (no build step).

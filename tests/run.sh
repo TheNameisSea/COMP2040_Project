@@ -20,6 +20,17 @@ check() {   # check <description> <command> <expected-word>
     fi
 }
 
+check_no() {   # check_no <description> <command> <word that must NOT appear>
+    out=$($2 2>&1) || true
+    if echo "$out" | grep -q "not implemented yet"; then
+        echo "SKIP  $1"; skip=$((skip + 1))
+    elif echo "$out" | grep -qw -- "$3"; then
+        echo "FAIL  $1"; echo "      must not contain: $3"; echo "$out" | sed 's/^/      /'; fail=1
+    else
+        echo "PASS  $1"; pass=$((pass + 1))
+    fi
+}
+
 # --- reference policies (must pass from day one) --------------------------
 check "FCFS textbook example: avg waiting 17.00" \
       "$BIN workloads/basic.txt --sched fcfs --no-paging" "avg_waiting=17.00"
@@ -51,6 +62,18 @@ check "Mixed workload finishes with 1 frame (faults wait for a frame)" \
 # --- checkpoint 1 ----------------------------------------------------------
 check "Deadlock detection reports A and B (pids 1 2)" \
       "$BIN workloads/deadlock.txt --sched rr --quantum 2 --deadlock-every 5 --max-ticks 60 --no-paging" "pids: 1 2"
+
+# Hand-computed in docs/checks/deadlock.md.
+check "Deadlock detection: first found at the check of t=15" \
+      "$BIN workloads/deadlock.txt --sched rr --quantum 2 --deadlock-every 5 --max-ticks 60 --no-paging" "DEADLOCK t=15 pids: 1 2"
+check_no "Deadlock detection: reported once, not again at t=20" \
+      "$BIN workloads/deadlock.txt --sched rr --quantum 2 --deadlock-every 5 --max-ticks 60 --no-paging" "DEADLOCK t=20"
+check_no "Deadlock detection (2 instances): no report at t=4, B can still finish" \
+      "$BIN workloads/deadlock_multi.txt --sched rr --quantum 1 --deadlock-every 2 --max-ticks 20 --no-paging" "DEADLOCK t=4"
+check "Deadlock detection (2 instances): found at t=6" \
+      "$BIN workloads/deadlock_multi.txt --sched rr --quantum 1 --deadlock-every 2 --max-ticks 20 --no-paging" "DEADLOCK t=6 pids: 1 2"
+check_no "Deadlock detection (2 instances): blocked but not deadlocked" \
+      "$BIN workloads/no_deadlock_multi.txt --sched fcfs --deadlock-every 1 --no-paging" "DEADLOCK"
 
 for s in sjf srtf prio mlfq; do
     check "Producer/consumer completes under $s" \
