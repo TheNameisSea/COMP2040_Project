@@ -1,0 +1,20 @@
+# Run with --sched prio --quantum 3 --no-paging.
+# B's equal-priority arrival at t=1 does not preempt A. H interrupts A at
+# t=2; A gets a fresh quantum when it returns at t=6. L must wait even when
+# a higher-priority process exhausts its quantum. See docs/checks/prio.md.
+
+process A arrive=0 prio=2 pages=1
+    cpu 7
+end
+
+process B arrive=1 prio=2 pages=1
+    cpu 5
+end
+
+process H arrive=2 prio=1 pages=1
+    cpu 1
+end
+
+process L arrive=0 prio=3 pages=1
+    cpu 1
+end

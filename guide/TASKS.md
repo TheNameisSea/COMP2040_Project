@@ -2,8 +2,8 @@
 
 | | Name | GitHub |
 |---|---|---|
-| **A** | | TheNameisSea |
-| **B** | | |
+| **A** | | garan1610 |
+| **B** | | TheNameisSea |
 
 Split accepted (DECISION.md D-1). Detailed guides:
 [PERSON_A.md](PERSON_A.md) and [PERSON_B.md](PERSON_B.md).
@@ -20,14 +20,14 @@ Fill in the real dates.
 
 | # | Task | Owner | Reviewer | Branch | Status |
 |---|---|---|---|---|---|
-| 1.1 | SJF (non-preemptive) in `src/sched.c` | A | B | `sched/sjf` | |
-| 1.2 | SRTF in `src/sched.c` | A | B | `sched/srtf` | |
-| 1.3 | PRIO: preemptive, RR between equal priorities | A | B | `sched/prio` | |
-| 1.4 | MLFQ: 3 levels, q/2q/4q, demotion, boost every 20 ticks | B | A | `sched/mlfq` | |
-| 1.5 | `deadlock_check()` in `src/sync.c` | B | A | `sync/deadlock` | |
-| 1.6 | Hand checks on `arrivals.txt` for 1.1–1.3 (+ Gantt) | A | B | with each task | |
-| 1.7 | Hand checks for MLFQ and deadlock | B | A | with each task | |
-| 1.8 | Progress report 1 (max 2 pages): data structures of the schedulers, how we checked them, who did what | A+B | | `docs/report1` | |
+| 1.1 | SJF (non-preemptive) in `src/sched.c` | A | B | `MinhBranch` | Implemented and tested; B review pending |
+| 1.2 | SRTF in `src/sched.c` | A | B | `MinhBranch` | Implemented and tested; B review pending |
+| 1.3 | PRIO: preemptive, RR between equal priorities | A | B | `MinhBranch` | Implemented and tested; B review pending |
+| 1.4 | MLFQ: 3 levels, q/2q/4q, demotion, boost every 20 ticks | B | A | `sched/mlfq` | Implemented and tested; A review pending |
+| 1.5 | `deadlock_check()` in `src/sync.c` | B | A | `sync/deadlock` | Merged into MinhBranch; A review pending |
+| 1.6 | Hand checks on `arrivals.txt` for 1.1–1.3 (+ Gantt) | A | B | `MinhBranch` | Calculations, Gantt charts and tests ready; B review pending |
+| 1.7 | Hand checks for MLFQ and deadlock | B | A | with each task | docs/checks/mlfq.md, docs/checks/deadlock.md |
+| 1.8 | Progress report 1 (max 2 pages): data structures of the schedulers, how we checked them, who did what | A+B | | `docs/report1` | Person A contribution ready in docs/report1_person_a.md; joint report pending |
 
 Done when: all checkpoint-1 SKIPs in `make test` are PASS, deadlock
 detection finds A and B in `deadlock.txt`, and `producer_consumer.txt`

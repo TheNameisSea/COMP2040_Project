@@ -1,0 +1,199 @@
+$ make test
+sh tests/run.sh
+PASS  FCFS textbook example: avg waiting 17.00
+PASS  RR q=4 textbook example: avg waiting 5.67
+PASS  RR q=4: context switches = 4 (P1,P2,P3,P1)
+PASS  Paging: P1 alone, FIFO, 3 frames -> 15 faults (textbook Sec. 10.4.2)
+PASS  Disk: FCFS, head 53 -> 640 cylinders (textbook Sec. 11.2.1)
+PASS  Producer/consumer completes
+PASS  Deadlock workload without detection: A and B stall, C finishes
+PASS  Mixed workload finishes
+PASS  Mixed workload finishes with 1 frame (faults wait for a frame)
+PASS  Deadlock detection reports A and B (pids 1 2)
+PASS  Deadlock detection: first found at the check of t=15
+PASS  Deadlock detection: reported once, not again at t=20
+PASS  Deadlock detection (2 instances): no report at t=4, B can still finish
+PASS  Deadlock detection (2 instances): found at t=6
+PASS  Deadlock detection (2 instances): blocked but not deadlocked
+PASS  Deadlock detection (2 instances): non-deadlocked processes finish
+PASS  Producer/consumer completes under sjf
+PASS  Producer/consumer completes under srtf
+PASS  Producer/consumer completes under prio
+SKIP  Producer/consumer completes under mlfq
+PASS  SJF on arrivals: avg waiting 10.00 (hand-computed)
+PASS  SJF on arrivals: avg response 9.00 (hand-computed)
+PASS  SJF on arrivals: avg turnaround 17.83 (hand-computed)
+PASS  SJF on arrivals: 8 context switches (hand-computed)
+PASS  SRTF on arrivals: avg waiting 9.83 (hand-computed)
+PASS  SRTF on arrivals: avg response 9.00 (hand-computed)
+PASS  SRTF on arrivals: avg turnaround 17.67 (hand-computed)
+PASS  SRTF on arrivals: 9 context switches (hand-computed)
+PASS  PRIO q=2 on arrivals: avg waiting 12.83 (hand-computed)
+PASS  PRIO q=2 on arrivals: avg response 8.33 (hand-computed)
+PASS  PRIO q=2 on arrivals: avg turnaround 20.67 (hand-computed)
+PASS  PRIO q=2 on arrivals: 12 context switches (hand-computed)
+PASS  SJF textbook bursts 24,3,3: avg waiting 3.00
+PASS  SJF edge case: avg waiting 3.50
+PASS  SJF edge case: avg response 3.75
+PASS  SJF edge case: avg turnaround 6.25
+PASS  SJF edge case: 4 context switches
+PASS  SRTF edge case: avg waiting 2.75
+PASS  SRTF edge case: avg response 1.50
+PASS  SRTF edge case: avg turnaround 5.50
+PASS  SRTF edge case: 5 context switches
+PASS  PRIO q=2 edge case: avg waiting 3.50
+PASS  PRIO q=2 edge case: avg response 2.25
+PASS  PRIO q=2 edge case: avg turnaround 6.25
+PASS  PRIO q=2 edge case: 5 context switches
+PASS  PRIO q=3: equal arrivals wait, fresh quantum after preemption; waiting 6.00
+PASS  PRIO q=3: avg response 3.75
+PASS  PRIO q=3: avg turnaround 9.50
+PASS  PRIO q=3: 7 context switches
+PASS  Mixed workload finishes under sjf with paging
+PASS  Mixed workload finishes under sjf with one frame
+PASS  Mixed workload finishes under srtf with paging
+PASS  Mixed workload finishes under srtf with one frame
+PASS  Mixed workload finishes under prio with paging
+PASS  Mixed workload finishes under prio with one frame
+SKIP  Paging: LRU, 3 frames -> 12 faults (textbook Sec. 10.4.4)
+SKIP  Disk: SSTF, head 53 -> 236
+SKIP  Disk: SCAN moving down, head 53 -> 236
+SKIP  Disk: C-LOOK moving up, head 53 -> 322
+---
+54 passed, 5 skipped (not implemented yet), 0 failed
+
+PASS check_no rejects a missing workload (nonzero exit).
+PASS check_no rejects forbidden output.
+PASS check_no accepts a successful run without forbidden output.
+PASS check_no preserves unimplemented-policy SKIPs.
+
+$ ./ossim workloads/arrivals.txt --sched sjf --quantum 2 --no-paging --gantt
+
+=== ossim report: workloads/arrivals.txt | sched=sjf q=2 | paging=off frames=64 replace=fifo | disk=fcfs cyl=200 head0=0 ===
+pid  name        arrive   first  finish turnaround  waiting response    cpu faults   disk
+1    J1               0       0      16         16        2        0     11      0      0
+2    J2               2      30      39         37       28       28      9      0      0
+3    J3               4       9      24         20        9        5      6      0      0
+4    J4               6       7       9          3        1        1      2      0      0
+5    J5               8      16      21         13        8        8      5      0      0
+6    J6              12      24      30         18       12       12      6      0      0
+
+CPU timeline (pid, 0 = idle, K = kernel/page-fault handling):
+  [0-6] P1 | [7-8] P4 | [9-11] P3 | [12-15] P1 | [16-20] P5 | [21-23] P3 | [24-29] P6 | [30-38] P2 |
+
+summary
+  ticks=39 finished=6/6 aborted=0
+  cpu_busy=39 cpu_idle=0 cpu_kernel=0 utilization=100.00%
+  throughput=0.1538 procs/tick context_switches=8
+  avg_turnaround=17.83 avg_waiting=10.00 avg_response=9.00
+  mem_refs=0 page_faults=0 evictions=0 fault_rate=0.0000 frame_waits=0
+  disk_requests=0 head_movement=0 avg_disk_wait=0.00 head=0
+  avg_fault_service=0.00
+
+$ ./ossim workloads/arrivals.txt --sched srtf --quantum 2 --no-paging --gantt
+
+=== ossim report: workloads/arrivals.txt | sched=srtf q=2 | paging=off frames=64 replace=fifo | disk=fcfs cyl=200 head0=0 ===
+pid  name        arrive   first  finish turnaround  waiting response    cpu faults   disk
+1    J1               0       0      16         16        2        0     11      0      0
+2    J2               2      30      39         37       28       28      9      0      0
+3    J3               4       9      20         16        5        5      6      0      0
+4    J4               6       7       9          3        1        1      2      0      0
+5    J5               8      16      24         16       11        8      5      0      0
+6    J6              12      24      30         18       12       12      6      0      0
+
+CPU timeline (pid, 0 = idle, K = kernel/page-fault handling):
+  [0-6] P1 | [7-8] P4 | [9-11] P3 | [12-15] P1 | [16-16] P5 | [17-19] P3 | [20-23] P5 | [24-29] P6 | [30-38] P2 |
+
+summary
+  ticks=39 finished=6/6 aborted=0
+  cpu_busy=39 cpu_idle=0 cpu_kernel=0 utilization=100.00%
+  throughput=0.1538 procs/tick context_switches=9
+  avg_turnaround=17.67 avg_waiting=9.83 avg_response=9.00
+  mem_refs=0 page_faults=0 evictions=0 fault_rate=0.0000 frame_waits=0
+  disk_requests=0 head_movement=0 avg_disk_wait=0.00 head=0
+  avg_fault_service=0.00
+
+$ ./ossim workloads/arrivals.txt --sched prio --quantum 2 --no-paging --gantt
+
+=== ossim report: workloads/arrivals.txt | sched=prio q=2 | paging=off frames=64 replace=fifo | disk=fcfs cyl=200 head0=0 ===
+pid  name        arrive   first  finish turnaround  waiting response    cpu faults   disk
+1    J1               0       0      31         31       17        0     11      0      0
+2    J2               2       2      11          9        0        0      9      0      0
+3    J3               4      24      40         36       25       20      6      0      0
+4    J4               6      18      20         14       12       12      2      0      0
+5    J5               8      26      36         28       23       18      5      0      0
+6    J6              12      12      18          6        0        0      6      0      0
+
+CPU timeline (pid, 0 = idle, K = kernel/page-fault handling):
+  [0-1] P1 | [2-10] P2 | [11-11] P1 | [12-17] P6 | [18-19] P4 | [20-23] P1 | [24-25] P3 | [26-26] P5 | [27-30] P1 | [31-31] P3 | [32-35] P5 | [36-36] idle | [37-39] P3 |
+
+summary
+  ticks=40 finished=6/6 aborted=0
+  cpu_busy=39 cpu_idle=1 cpu_kernel=0 utilization=97.50%
+  throughput=0.1500 procs/tick context_switches=12
+  avg_turnaround=20.67 avg_waiting=12.83 avg_response=8.33
+  mem_refs=0 page_faults=0 evictions=0 fault_rate=0.0000 frame_waits=0
+  disk_requests=0 head_movement=0 avg_disk_wait=0.00 head=0
+  avg_fault_service=0.00
+
+$ ./ossim workloads/prio_check.txt --sched prio --quantum 3 --no-paging --gantt
+
+=== ossim report: workloads/prio_check.txt | sched=prio q=3 | paging=off frames=64 replace=fifo | disk=fcfs cyl=200 head0=0 ===
+pid  name        arrive   first  finish turnaround  waiting response    cpu faults   disk
+1    A                0       0      13         13        6        0      7      0      0
+2    B                1       3      11         10        5        2      5      0      0
+3    H                2       2       3          1        0        0      1      0      0
+4    L                0      13      14         14       13       13      1      0      0
+
+CPU timeline (pid, 0 = idle, K = kernel/page-fault handling):
+  [0-1] P1 | [2-2] P3 | [3-5] P2 | [6-8] P1 | [9-10] P2 | [11-12] P1 | [13-13] P4 |
+
+summary
+  ticks=14 finished=4/4 aborted=0
+  cpu_busy=14 cpu_idle=0 cpu_kernel=0 utilization=100.00%
+  throughput=0.2857 procs/tick context_switches=7
+  avg_turnaround=9.50 avg_waiting=6.00 avg_response=3.75
+  mem_refs=0 page_faults=0 evictions=0 fault_rate=0.0000 frame_waits=0
+  disk_requests=0 head_movement=0 avg_disk_wait=0.00 head=0
+  avg_fault_service=0.00
+
+Completion checks for Person A schedulers (paging on, 6 frames):
+PASS sjf basic: finished=3/3
+PASS sjf arrivals: finished=6/6
+PASS sjf producer_consumer: finished=2/2
+PASS sjf mixed: finished=4/4
+PASS sjf paging: finished=2/2
+PASS sjf paging_p1: finished=1/1
+PASS sjf disk_textbook: finished=8/8
+PASS sjf sched_edges: finished=4/4
+PASS sjf prio_check: finished=4/4
+PASS sjf no_deadlock_multi: finished=2/2
+PASS srtf basic: finished=3/3
+PASS srtf arrivals: finished=6/6
+PASS srtf producer_consumer: finished=2/2
+PASS srtf mixed: finished=4/4
+PASS srtf paging: finished=2/2
+PASS srtf paging_p1: finished=1/1
+PASS srtf disk_textbook: finished=8/8
+PASS srtf sched_edges: finished=4/4
+PASS srtf prio_check: finished=4/4
+PASS srtf no_deadlock_multi: finished=2/2
+PASS prio basic: finished=3/3
+PASS prio arrivals: finished=6/6
+PASS prio producer_consumer: finished=2/2
+PASS prio mixed: finished=4/4
+PASS prio paging: finished=2/2
+PASS prio paging_p1: finished=1/1
+PASS prio disk_textbook: finished=8/8
+PASS prio sched_edges: finished=4/4
+PASS prio prio_check: finished=4/4
+PASS prio no_deadlock_multi: finished=2/2
+
+$ cc --version
+cc (Ubuntu 15.2.0-16ubuntu1) 15.2.0
+Copyright (C) 2025 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+
+Clang is not installed in Ubuntu; its build was not checked.

@@ -1,0 +1,24 @@
+# Deadlock on one resource with 2 instances. A and B each take one, then
+# each wants a second one. Hand-computed in docs/checks/deadlock.md:
+#   ./ossim workloads/deadlock_multi.txt --sched rr --quantum 1 --deadlock-every 2 --max-ticks 20 --no-paging
+# A blocks at the end of t4, B at the end of t5. The check at t=4 must not
+# report (B can still finish and free its instance); the check at t=6 must
+# report pids 1 2.
+
+resource R 2
+
+process A arrive=0 pages=1
+    acquire R
+    cpu 3
+    acquire R
+    cpu 1
+    release R 2
+end
+
+process B arrive=0 pages=1
+    acquire R
+    cpu 3
+    acquire R
+    cpu 1
+    release R 2
+end

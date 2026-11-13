@@ -1,0 +1,18 @@
+# Blocked but not deadlocked. A holds both instances of R, B waits for one.
+# A needs nothing more, so it can finish and release, and then B can go on.
+# deadlock_check() must report nothing:
+#   ./ossim workloads/no_deadlock_multi.txt --sched fcfs --deadlock-every 1 --no-paging
+
+resource R 2
+
+process A arrive=0 pages=1
+    acquire R 2
+    cpu 6
+    release R 2
+end
+
+process B arrive=1 pages=1
+    acquire R
+    cpu 2
+    release R
+end
