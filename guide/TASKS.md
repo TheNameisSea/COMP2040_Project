@@ -23,10 +23,10 @@ Fill in the real dates.
 | 1.1 | SJF (non-preemptive) in `src/sched.c` | A | B | `MinhBranch` | Implemented and tested; B review pending |
 | 1.2 | SRTF in `src/sched.c` | A | B | `MinhBranch` | Implemented and tested; B review pending |
 | 1.3 | PRIO: preemptive, RR between equal priorities | A | B | `MinhBranch` | Implemented and tested; B review pending |
-| 1.4 | MLFQ: 3 levels, q/2q/4q, demotion, boost every 20 ticks | B | A | `sched/mlfq` | |
-| 1.5 | `deadlock_check()` in `src/sync.c` | B | A | `sync/deadlock` | |
+| 1.4 | MLFQ: 3 levels, q/2q/4q, demotion, boost every 20 ticks | B | A | `sched/mlfq` | Implemented and tested; A review pending |
+| 1.5 | `deadlock_check()` in `src/sync.c` | B | A | `sync/deadlock` | Merged into MinhBranch; A review pending |
 | 1.6 | Hand checks on `arrivals.txt` for 1.1–1.3 (+ Gantt) | A | B | `MinhBranch` | Calculations, Gantt charts and tests ready; B review pending |
-| 1.7 | Hand checks for MLFQ and deadlock | B | A | with each task | |
+| 1.7 | Hand checks for MLFQ and deadlock | B | A | with each task | docs/checks/mlfq.md, docs/checks/deadlock.md |
 | 1.8 | Progress report 1 (max 2 pages): data structures of the schedulers, how we checked them, who did what | A+B | | `docs/report1` | Person A contribution ready in docs/report1_person_a.md; joint report pending |
 
 Done when: all checkpoint-1 SKIPs in `make test` are PASS, deadlock

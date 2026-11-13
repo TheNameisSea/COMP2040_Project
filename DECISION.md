@@ -91,6 +91,30 @@ Why: This makes the required shell tests usable on Windows/WSL checkouts
 and prevents a failed run from passing on incidental matching output.
 No kernel, header, Makefile, or output format changes are needed.
 
+## D-10: MLFQ rules (Q-9)
+Date: 2026-11-13 · Decided by: B · Status: accepted
+Context: The Guide fixes 3 levels, quanta q, 2q, 4q, demotion on a full
+quantum, no demotion on an earlier block, and a boost every 20 ticks. The
+rest is ours to choose.
+Decision:
+- Demotion happens in on_tick when the quantum is used up, so a process
+  that uses its whole quantum is demoted even if it blocks in that tick.
+  Level 2 is the bottom: there it only starts a new quantum.
+- After its quantum the process is preempted only if a process is ready at
+  its new level or higher; otherwise it keeps the CPU with a new quantum
+  (the RR rule of the Guide).
+- A process ready at a higher level preempts at once. The preempted one
+  keeps its level (it did not use its whole quantum) and gets a fresh
+  quantum at its next dispatch.
+- Boost at t = 20, 40, ... (not 0), at the start of should_preempt or pick,
+  whichever the kernel calls first that tick. Levels 1 then 2 move to the
+  tail of level 0 in order; every process that has not terminated, blocked
+  and running included, gets level 0; the running one gets a fresh quantum.
+- Bursts back to back keep the CPU and quantum_used (no new dispatch).
+Why: Each rule follows the Guide or the RR convention of the scaffold, and
+both are visible in docs/checks/mlfq.md (workloads/mlfq_check.txt shows the
+boost changing C's response time).
+
 ## Open questions
 
 - **Q-3: Tie-breaking in SJF/SRTF/PRIO.** Equal keys: FIFO order of entering
@@ -102,8 +126,6 @@ No kernel, header, Makefile, or output format changes are needed.
 - **Q-8: PRIO details.** Fresh quantum after being preempted by a higher
   priority? Equal-priority arrival waits for the quantum to end? Implemented
   in D-8; B review pending. Owner: A.
-- **Q-9: MLFQ details.** Boost at t = 20, 40, …; demote even if nobody else
-  is ready; higher-level arrival preempts right away. Owner: B.
 - **Q-10: Clock.** A newly installed page has `referenced = true` (set by
   `mem_install`); the hand moves past the victim. Owner: A.
 - **Q-11: SSTF ties.** Equal distance: lower index (older request) wins. Owner: B.

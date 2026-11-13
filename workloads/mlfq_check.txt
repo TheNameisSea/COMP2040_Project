@@ -1,0 +1,17 @@
+# MLFQ edge cases, hand-computed in docs/checks/mlfq.md:
+#   ./ossim workloads/mlfq_check.txt --sched mlfq --quantum 2 --no-paging --gantt
+# A alone keeps the CPU after its quantum and sinks to level 2. B (level 0)
+# preempts A (level 1) at once. The boost at t=20 puts A back on level 0, so
+# C, arriving at t=21, has to wait for the end of A's level-0 quantum.
+
+process A arrive=0 pages=1
+    cpu 30
+end
+
+process B arrive=3 pages=1
+    cpu 2
+end
+
+process C arrive=21 pages=1
+    cpu 2
+end

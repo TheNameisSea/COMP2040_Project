@@ -160,7 +160,29 @@ for s in sjf srtf prio; do
     check "Mixed workload finishes under $s with one frame" \
           "$BIN workloads/mixed.txt --sched $s --quantum 3 --frames 1" "finished=4/4"
 done
-# Person B: add hand-computed arrivals checks for MLFQ with its implementation.
+# Person B: MLFQ, hand-computed in docs/checks/mlfq.md.
+check "MLFQ q=2 on arrivals: avg waiting 15.33 (hand-computed)" \
+      "$BIN workloads/arrivals.txt --sched mlfq --quantum 2 --no-paging" "avg_waiting=15.33"
+check "MLFQ q=2 on arrivals: avg response 0.00 (hand-computed)" \
+      "$BIN workloads/arrivals.txt --sched mlfq --quantum 2 --no-paging" "avg_response=0.00"
+check "MLFQ q=2 on arrivals: avg turnaround 23.17 (hand-computed)" \
+      "$BIN workloads/arrivals.txt --sched mlfq --quantum 2 --no-paging" "avg_turnaround=23.17"
+check "MLFQ q=2 on arrivals: 19 context switches (hand-computed)" \
+      "$BIN workloads/arrivals.txt --sched mlfq --quantum 2 --no-paging" "context_switches=19"
+
+# Bottom level, keeping the CPU alone, and a boost that delays C.
+check "MLFQ edge case: avg waiting 1.67" \
+      "$BIN workloads/mlfq_check.txt --sched mlfq --quantum 2 --no-paging" "avg_waiting=1.67"
+check "MLFQ edge case: avg response 0.33 (boost puts A back on level 0)" \
+      "$BIN workloads/mlfq_check.txt --sched mlfq --quantum 2 --no-paging" "avg_response=0.33"
+check "MLFQ edge case: avg turnaround 13.00" \
+      "$BIN workloads/mlfq_check.txt --sched mlfq --quantum 2 --no-paging" "avg_turnaround=13.00"
+check "MLFQ edge case: 5 context switches" \
+      "$BIN workloads/mlfq_check.txt --sched mlfq --quantum 2 --no-paging" "context_switches=5"
+check "Mixed workload finishes under mlfq with paging" \
+      "$BIN workloads/mixed.txt --sched mlfq --quantum 3 --frames 6" "finished=4/4"
+check "Mixed workload finishes under mlfq with one frame" \
+      "$BIN workloads/mixed.txt --sched mlfq --quantum 3 --frames 1" "finished=4/4"
 
 # --- checkpoint 2 ----------------------------------------------------------
 check "Paging: LRU, 3 frames -> 12 faults (textbook Sec. 10.4.4)" \
