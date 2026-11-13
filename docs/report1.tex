@@ -1,0 +1,148 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=21mm,headheight=14pt,includeheadfoot]{geometry}
+\usepackage{amsmath,booktabs,enumitem,fancyhdr}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{3pt}
+\setlist[enumerate]{label=\textbf{(\alph*)},leftmargin=*,itemsep=3pt,topsep=3pt,parsep=0pt}
+\setlist[itemize]{leftmargin=*,itemsep=1pt,topsep=2pt,parsep=0pt}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small COMP2040 --- Operating Systems}
+\fancyhead[R]{\small Checkpoint 1}
+\fancyfoot[C]{\small\thepage}
+\newcommand{\code}[1]{\texttt{#1}}
+
+\begin{document}
+\begin{center}
+  {\Large\bfseries COMP2040: Operating Systems\par}
+  \vspace{3pt}
+  {\large Checkpoint 1: Progress Report\par}
+  \vspace{5pt}
+  Group 10:
+  Nguyen Vu Nhat Minh (V202401314) \quad
+  Do Chi Hai (V202401459)\\
+  {\small College of Engineering and Computer Science, VinUniversity}
+\end{center}
+
+All four Checkpoint 1 schedulers and resource deadlock detection are
+implemented in \code{ossim}. Design choices are recorded in
+\code{DECISION.md} (D-4, D-7 to D-10) and every hand calculation in
+\code{docs/checks/}.
+
+\section{Data Structures and Design}
+
+Every scheduler fills the \code{scheduler\_t} hooks and keeps its READY
+processes in \code{queue\_t}, an array of PCB pointers (at most 64).
+New and preempted processes join the tail. \code{q\_pop\_min} removes the
+smallest key and keeps queue order on ties, so ties are FIFO, not by pid.
+
+\begin{enumerate}
+\item \textbf{SJF.} One queue, key \code{proc\_burst\_remaining}: the
+\emph{current} CPU burst, not all future work. Never preempts; a process
+whose next operation is \code{cpu} keeps the CPU without a new dispatch.
+
+\item \textbf{SRTF.} Same queue and key. \code{should\_preempt} is true when
+\code{q\_min\_key} is \emph{strictly} smaller than the runner's remaining
+burst, so equal bursts do not swap every tick.
+
+\item \textbf{PRIO.} Key \code{priority} (smaller is higher). A strictly
+higher priority preempts at once. The quantum counter
+\code{quantum\_used} grows in \code{on\_tick} and is reset at each
+dispatch; on expiry the runner goes
+to the tail only if an equal priority is ready, so equal priorities share
+the CPU round-robin and lower ones cannot force a rotation.
+
+\item \textbf{MLFQ.} Three queues, one per level; level \(\ell\) has quantum
+\(q\cdot2^{\ell}\) and \code{pick} takes the head of the highest non-empty
+level. \code{on\_tick} demotes a process as soon as its quantum is used up
+(the bottom level only restarts it). After expiry it keeps the CPU only if
+nobody is ready at its new level or higher; a process ready at a higher
+level preempts at once and the preempted one keeps its level. No hook runs
+every tick, but each tick calls \code{should\_preempt} or \code{pick}, so
+both start with the boost: at \(t=20,40,\dots\), once per tick, levels 1
+and 2 move in order to the tail of level 0 and every live process, blocked
+or running, gets level 0.
+
+\item \textbf{Deadlock detection.} The algorithm of Sec.~8.6.2 with
+\code{Available}, \code{allocated[pid]} and \code{requested[pid]} from each
+\code{resource\_t}: \code{Work} starts as Available, a process holding
+nothing is finished, and any process whose Request fits in \code{Work}
+is assumed to finish and return its Allocation. Those left are deadlocked
+and printed once, in pid order, as \code{DEADLOCK t=<tick> pids: \ldots};
+a static array of the last reported set prevents repeats. It handles
+several instances per resource. A process blocked on a semaphore has no
+Request and so counts as able to finish. There is no recovery.
+\end{enumerate}
+
+\textbf{Cost and prediction.} Selection and preemption tests scan the
+queue in \(O(n)\); detection is \(O(n^2 m)\) for \(n\) processes and \(m\)
+resources. Both are small at 64 processes. \code{ossim} knows each burst
+length; a real OS would predict it with exponential averaging,
+\(\tau_{n+1}=\alpha t_n+(1-\alpha)\tau_n\).
+
+\section{How We Checked Them}
+
+Each case was traced by hand from the rules in the Guide before running
+\code{ossim} (\code{--no-paging}; quantum 2 for PRIO and MLFQ). The
+teammate who did not write the code redid part of each trace in review.
+
+\begin{center}
+{\small
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+ & \multicolumn{3}{c}{Average in ticks (hand = simulator)} & \\
+\cmidrule(lr){2-4}
+Scheduler, \code{arrivals.txt} & Waiting & Response & Turnaround & Switches \\
+\midrule
+SJF  & 10.00 & 9.00 & 17.83 & 8 \\
+SRTF & 9.83  & 9.00 & 17.67 & 9 \\
+PRIO & 12.83 & 8.33 & 20.67 & 12 \\
+MLFQ & 15.33 & 0.00 & 23.17 & 19 \\
+\bottomrule
+\end{tabular}}
+\end{center}
+
+\begin{itemize}
+\item \textbf{Edge cases.} \code{sched\_edges.txt} (FIFO ties, same-tick
+events, back-to-back bursts) for SJF, SRTF and PRIO; \code{prio\_check.txt}
+for the fresh quantum after preemption; \code{mlfq\_check.txt} for the
+bottom level and the boost, which alone gives C a response time of 1
+(waiting 1.67, response 0.33, turnaround 13.00, 5 switches). SJF gives the
+textbook waiting time 3.00 on bursts 24, 3, 3.
+\item \textbf{Deadlock.} On \code{deadlock.txt} (RR, \(q=2\), check every 5
+ticks) B blocks at the end of tick 11 and A at the end of tick 12, so the
+first report is \code{DEADLOCK t=15 pids: 1 2}, printed once; both of us
+derived this. \code{deadlock\_multi.txt} (one resource, two instances) must
+\emph{not} report at \(t=4\), since B can still finish and free an
+instance, and must report at \(t=6\). \code{no\_deadlock\_multi.txt} is
+blocked but never deadlocked.
+\item \textbf{Integration.} \code{producer\_consumer.txt} finishes under all
+six schedulers, and \code{mixed.txt} with paging, including one frame, under
+the four new ones.
+\end{itemize}
+
+Every value above is a check in \code{tests/run.sh}; \code{check} and
+\code{check\_no} also fail if \code{ossim} exits with an error. With GCC
+and \code{-std=c99 -Wall -Wextra -Werror}, \code{make test} gives
+\textbf{65 passed, 4 skipped (Checkpoint 2), 0 failed}.
+
+\section{Who Did What}
+
+\textbf{Nguyen Vu Nhat Minh (Person A, \code{garan1610}):} SJF, SRTF and
+PRIO with their hand checks, edge-case workloads and tests; stricter
+\code{check}/\code{check\_no}; LF line endings for WSL; review of
+deadlock detection and MLFQ.
+
+\textbf{Do Chi Hai (Person B, \code{TheNameisSea}):} MLFQ and
+deadlock detection with their hand checks, workloads and tests; team
+guide, git workflow and decision log; review of SJF, SRTF and PRIO.
+
+Every change went through a pull request reviewed by the other member.
+AI assistants helped with implementation, hand checks and debugging; 
+each of us can explain every line we submitted.
+
+\textbf{Limitations.} PRIO can starve low priorities (no aging); detection
+ignores semaphores; only GCC was tested, as Clang was not available.
+
+\end{document}
